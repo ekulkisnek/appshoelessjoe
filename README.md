@@ -1,6 +1,6 @@
 # appshoelessjoe
 
-Hello World Expo app with tunnel mode enabled.
+Expo app with camera OCR for barcode scanning and text detection from shoebox labels.
 
 ## Prerequisites
 
@@ -40,8 +40,38 @@ npx expo start --tunnel
 - `npm run android` - Start with Android emulator (tunnel mode)
 - `npm run web` - Start web version
 
+## Features
+
+- **Barcode Scanning**: Real-time barcode scanning (EAN-13, EAN-8, Code 128, Code 39, UPC-A, UPC-E, QR codes)
+- **Text Recognition (OCR)**: Capture images and detect text from shoebox labels
+- **Dual Mode**: Switch between barcode scanning and OCR text detection modes
+- **Tunnel Mode**: Connect your iPhone even when on different networks
+
+## Usage
+
+1. **Barcode Mode**: 
+   - Point camera at any barcode
+   - Scanned barcodes appear in the results section below
+   - Tap "Scan Again" to scan another barcode
+
+2. **OCR Text Mode**:
+   - Switch to "OCR Text" mode
+   - Tap "Capture & Scan Text" button
+   - Point camera at text (shoebox labels, etc.)
+   - Captured image will be processed for text recognition
+   - Detected text will appear in results
+
+## Dependencies
+
+- `expo-camera` - Camera access
+- `expo-barcode-scanner` - Barcode scanning
+- `expo-image-picker` - Image capture
+- `expo-image-manipulator` - Image processing
+- `@react-native-ml-kit/text-recognition` - Text recognition (may require custom dev build)
+
 ## Notes
 
 - Tunnel mode allows connection even when iPhone and computer are on different networks
 - The dev server will keep running until you stop it (Ctrl+C)
 - Changes to code will hot-reload automatically
+- **Note**: Text recognition using ML Kit may require a custom development build for full functionality in Expo. Barcode scanning works in Expo Go.
