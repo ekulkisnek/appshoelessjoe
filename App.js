@@ -1,27 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View, Button, ScrollView, TouchableOpacity, Alert } from 'react-native';
-import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
-import { BarCodeScanner } from 'expo-barcode-scanner';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
-import TextRecognition from '@react-native-ml-kit/text-recognition';
+
+// Conditionally import text recognition (may not work in Expo Go)
+let TextRecognition = null;
+try {
+  const mlKit = require('@react-native-ml-kit/text-recognition');
+  TextRecognition = mlKit.default || mlKit;
+} catch (e) {
+  console.warn('Text recognition not available in Expo Go - requires custom dev build');
+}
 
 export default function App() {
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
-  const [barcodePermission, setBarcodePermission] = useState(null);
   const [mode, setMode] = useState('barcode'); // 'barcode' or 'ocr'
   const [scanned, setScanned] = useState(false);
   const [barcodeData, setBarcodeData] = useState([]);
   const [recognizedText, setRecognizedText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-
-  useEffect(() => {
-    (async () => {
-      const { status } = await BarCodeScanner.requestPermissionsAsync();
-      setBarcodePermission(status === 'granted');
-    })();
-  }, []);
 
   const handleBarcodeScanned = ({ type, data }) => {
     if (!scanned) {
@@ -60,6 +59,15 @@ export default function App() {
         );
 
         // Perform text recognition
+        if (!TextRecognition) {
+          Alert.alert(
+            'Text Recognition Not Available',
+            'Text recognition requires a custom development build. It does not work in Expo Go. Barcode scanning works perfectly though!'
+          );
+          setRecognizedText('Text recognition requires custom dev build. Barcode scanning works in Expo Go!');
+          return;
+        }
+
         try {
           const result = await TextRecognition.recognize(manipulatedImage.uri);
           const detectedText = result.text || 'No text detected';
@@ -72,16 +80,11 @@ export default function App() {
           }
         } catch (ocrError) {
           console.error('Text recognition error:', ocrError);
-          // If ML Kit doesn't work in Expo Go, show helpful message
-          if (ocrError.message && ocrError.message.includes('Native')) {
-            Alert.alert(
-              'Custom Build Required',
-              'Text recognition requires a custom development build. For now, barcode scanning works in Expo Go!'
-            );
-            setRecognizedText('Text recognition requires custom build. Use barcode mode for now.');
-          } else {
-            throw ocrError;
-          }
+          Alert.alert(
+            'Text Recognition Error',
+            'Text recognition requires a custom development build. It does not work in Expo Go. Barcode scanning works perfectly though!'
+          );
+          setRecognizedText('Text recognition requires custom dev build. Barcode scanning works in Expo Go!');
         }
       }
     } catch (error) {
@@ -92,15 +95,15 @@ export default function App() {
     }
   };
 
-  if (cameraPermission === null || barcodePermission === null) {
+  if (cameraPermission === null) {
     return (
       <View style={styles.container}>
-        <Text>Requesting camera permissions...</Text>
+        <Text style={styles.errorText}>Requesting camera permissions...</Text>
       </View>
     );
   }
 
-  if (!cameraPermission.granted || !barcodePermission) {
+  if (!cameraPermission.granted) {
     return (
       <View style={styles.container}>
         <Text style={styles.errorText}>Camera permission is required</Text>
@@ -115,18 +118,14 @@ export default function App() {
       
       {/* Camera View */}
       <View style={styles.cameraContainer}>
-        {mode === 'barcode' ? (
-          <BarCodeScanner
-            onBarCodeScanned={scanned ? undefined : handleBarcodeScanned}
-            style={StyleSheet.absoluteFillObject}
-            barCodeTypes={BarCodeScanner.Constants.BarCodeType}
-          />
-        ) : (
-          <CameraView
-            style={StyleSheet.absoluteFillObject}
-            facing="back"
-          />
-        )}
+        <CameraView
+          style={StyleSheet.absoluteFillObject}
+          facing="back"
+          onBarcodeScanned={mode === 'barcode' && !scanned ? handleBarcodeScanned : undefined}
+          barcodeScannerSettings={{
+            barcodeTypes: ['qr', 'ean13', 'ean8', 'code128', 'code39', 'upc_a', 'upc_e', 'pdf417'],
+          }}
+        />
         
         {/* Overlay */}
         <View style={styles.overlay}>
